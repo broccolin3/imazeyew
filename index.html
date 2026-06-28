@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> i maze yoü</title>
+    <style>
+        :root {
+            --primary-pink: #ff65a3;
+            --hover-pink: #e04d8b;
+            --bg-purple: #4a154b;
+            --maze-wall: #6b236e;
+            --maze-path: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #fce4ec;
+            background-image: url('https://www.transparenttextures.com/patterns/crumpled-paper.png');
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .gif-container {
+            width: 180px;
+            height: 180px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .gif-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .highlight {
+            color: var(--primary-pink);
+            display: block;
+            font-size: 3rem;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .btn-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        button {
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn-yes {
+            background-color: var(--primary-pink);
+            color: white;
+        }
+        .btn-yes:hover {
+            background-color: var(--hover-pink);
+            transform: translateY(-2px);
+        }
+
+        .btn-no {
+            background-color: #fff;
+            color: #666;
+            border: 2px solid #ddd;
+            position: absolute;
+        }
+
+        .modal {
+            background: white;
+            border: 4px dashed var(--primary-pink);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 90%;
+        }
+        .modal h2 {
+            color: var(--primary-pink);
+            margin-bottom: 15px;
+        }
+        .modal ul {
+            text-align: left;
+            margin: 20px 0;
+            color: #555;
+            list-style-type: '👉 ';
+            padding-left: 20px;
+        }
+        .modal li {
+            margin-bottom: 10px;
+        }
+
+        #game-view {
+            max-width: 100vw;
+        }
+        #game-view h2 {
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+        }
+        .game-container {
+            background-color: var(--bg-purple);
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #mazeCanvas {
+            background: var(--maze-wall);
+            border-radius: 10px;
+            max-width: 100%;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 65px);
+            grid-template-rows: repeat(2, 65px);
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .control-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 15px;
+            font-size: 1.6rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .control-btn:active {
+            background-color: var(--primary-pink);
+        }
+        .up-btn { grid-column: 2; }
+        .left-btn { grid-column: 1; grid-row: 2; }
+        .down-btn { grid-column: 2; grid-row: 2; }
+        .right-btn { grid-column: 3; grid-row: 2; }
+
+        #end-view {
+            background: linear-gradient(to bottom, #0b001a, #200b3b);
+            color: white;
+            min-height: 100vh;
+            min-width: 100vw;
+            justify-content: center;
+        }
+        #end-view h1 {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" src="freesound_community-cute-music-26476.mp3" loop preload="auto"></audio>
+
+    <div id="landing-view" class="view active">
+        <div class="gif-container">
+            <img src="31a72afda250825d993400c3ef28c55c.gif" alt="Intro Cute GIF">
+        </div>
+        <h1>Hello <span class="highlight">My Baby!</span></h1>
+        <p>Do you want to play a game?</p>
+        <div class="btn-container" style="height: 60px;">
+            <button class="btn-yes" id="yesBtn">Yes! I want to play, baby</button>
+            <button class="btn-no" id="noBtn">No! I don't want to play</button>
+        </div>
+    </div>
+
+    <div id="rules-view" class="view">
+        <div class="modal">
+            <h2>game details</h2>
+            <p>you will play a cute maze game. reach the end to get your reward!</p>
+            <ul>
+                <li><strong>reward:</strong> ????? </li>
+                <li><strong>how to play:</strong> use the on-screen arrows at the bottom of your phone screen to move through the maze lanes.</li>
+            </ul>
+            <button class="btn-yes" onclick="startGame()">start game</button>
+        </div>
+    </div>
+
+    <div id="game-view" class="view">
+        <div class="game-container">
+            <h2>find your way to me!</h2>
+            <canvas id="mazeCanvas" width="350" height="350"></canvas>
+            
+            <div class="controls">
+                <button class="control-btn up-btn" onclick="movePlayer(0, -1)">▲</button>
+                <button class="control-btn left-btn" onclick="movePlayer(-1, 0)">◀</button>
+                <button class="control-btn down-btn" onclick="movePlayer(0, 1)">▼</button>
+                <button class="control-btn right-btn" onclick="movePlayer(1, 0)">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-view" class="view">
+        <div class="modal">
+            <h2>YIPPIE!</h2>
+            <p id="success-text">you are so great, i am so proud of you !</p>
+            <button class="btn-yes" id="nextSuccessBtn">next</button>
+        </div>
+    </div>
+
+    <div id="end-view" class="view">
+        <div class="gif-container">
+            <img src="963b403dc8742ae8e76b87f5d874515b.gif" alt="Kiss Page Cute GIF">
+        </div>
+        <h1>I MAZE Ü</h1>
+        <p style="color: #ea80fc;">I love you soooooooo much! you did so well this week. don't forget to take a rest!! I MISS YOU SOOOOOO MUCH Ü</p>
+        <button class="btn-yes" onclick="location.reload()">play again</button>
+    </div>
+
+    <script>
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // Dedicated Mobile Touch/Click Setup for Audio
+        document.getElementById('yesBtn').addEventListener('click', function() {
+            const music = document.getElementById('bgMusic');
+            music.play().catch(err => console.log("Audio playback waiting for valid link."));
+            showView('rules-view');
+        });
+
+        // Runaway Button Engine
+        const noBtn = document.getElementById('noBtn');
+        const landingView = document.getElementById('landing-view');
+
+        function runaway() {
+            const viewWidth = landingView.offsetWidth;
+            const viewHeight = landingView.offsetHeight;
+            const newX = Math.random() * (viewWidth - noBtn.offsetWidth - 40) + 20;
+            const newY = Math.random() * (viewHeight - noBtn.offsetHeight - 40) + 20;
+            noBtn.style.left = `${newX}px`;
+            noBtn.style.top = `${newY}px`;
+        }
+        noBtn.addEventListener('mouseenter', runaway);
+        noBtn.addEventListener('touchstart', function(e) { e.preventDefault(); runaway(); });
+        noBtn.addEventListener('click', runaway);
+
+        // Maze Matrix
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const mazeGrid = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,0,1,1,1,0,1,0,1],
+            [1,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,0,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,1,0,1,0,0,0,1],
+            [1,1,1,0,1,1,1,0,1,0,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,1,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,0,1,0,1],
+            [1,0,1,0,0,0,0,0,0,0,1,0,1,0,1],
+            [1,0,1,0,1,1,1,1,1,0,1,0,1,0,1],
+            [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+        const rows = mazeGrid.length;
+        const cols = mazeGrid[0].length;
+        const tileSize = canvas.width / cols;
+
+        let player = { x: 1, y: 1 };
+        const target = { x: 13, y: 13 };
+
+        function drawMaze() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (mazeGrid[r][c] === 1) {
+                        ctx.fillStyle = '#6b236e';
+                        ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+                    } else {
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+            ctx.font = `${tileSize * 0.75}px Arial`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🦕", target.x * tileSize + tileSize/2, target.y * tileSize + tileSize/2);
+            ctx.fillText("🦝", player.x * tileSize + tileSize/2, player.y * tileSize + tileSize/2);
+        }
+
+        function movePlayer(dx, dy) {
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+            if (newX >= 0 && newX < cols && newY >= 0 && newY < rows) {
+                if (mazeGrid[newY][newX] === 0) {
+                    player.x = newX;
+                    player.y = newY;
+                    drawMaze();
+                    checkWinCondition();
+                }
+            }
+        }
+
+        function startGame() {
+            showView('game-view');
+            player = { x: 1, y: 1 }; 
+            drawMaze();
+        }
+
+        function checkWinCondition() {
+            if (player.x === target.x && player.y === target.y) {
+                setTimeout(() => {
+                    showView('success-view');
+                    setupSuccessSequence();
+                }, 300);
+            }
+        }
+
+        function setupSuccessSequence() {
+            const textElement = document.getElementById('success-text');
+            const nextBtn = document.getElementById('nextSuccessBtn');
+            let stage = 1;
+            nextBtn.onclick = () => {
+                if (stage === 1) {
+                    textElement.innerHTML = "I 🦕ove you soooooooo much! Mwaaaaah!!! ^3^";
+                    stage = 2;
+                } else {
+                    showView('end-view');
+                }
+            };
+        }
+    </script>
+</body>
+                        </html>
